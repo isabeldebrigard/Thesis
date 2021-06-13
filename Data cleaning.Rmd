@@ -1,0 +1,290 @@
+---
+title: "Data cleaning"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=T, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(stargazer)
+library(ggplot2)
+library(descr)
+library(sjPlot)
+library(readxl)
+library(stringr)
+library(plm)
+library(table1)
+library(RColorBrewer)
+library(lattice)
+options(scipen=999)
+```
+
+# Read in the data for Pruebas Saber 9 2017, Pruebas Saber 11 2019, and the key
+```{r, warning=FALSE}
+rSB92017 <- read_xlsx("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/Grado9_2017_Estudiante.xlsx")
+
+rSB11_20191 <- read_xlsx("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/SB11_20191.xlsx")
+
+rSB11_20192 <- read_xlsx("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/SB11_20192.xlsx")
+
+rkey911 <- read_xlsx("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/Llave_Saber11_2018-1_2019-2_Saber9_2017.xlsx")
+
+rISCE <- read_xlsx("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/ISCED EE2017_Media.xlsx")
+```
+
+# Adjust data Saber 9 2017
+```{r, warning=F}
+# Filter observations with INSE = 0
+
+rSB92017 <- rSB92017 %>% filter(ESTU_INSE_INDIVIDUAL > 0) 
+
+# Create a ESTU_NSE_INDIVIDUAL variable for the Pruebas Saber 9 2017 dataset with appropriate levels
+
+rSB92017 <- rSB92017 %>% mutate(ESTU_NSE_INDIVIDUAL = 
+                                  as.factor(case_when(ESTU_INSE_INDIVIDUAL >= "0" & ESTU_INSE_INDIVIDUAL <= "40.595" ~ "1",
+                                                      ESTU_INSE_INDIVIDUAL > "40.596" & ESTU_INSE_INDIVIDUAL <= "51.590" ~ "2",
+                                                      ESTU_INSE_INDIVIDUAL > "51.591" & ESTU_INSE_INDIVIDUAL <= "60.336" ~ "3",
+                                                      ESTU_INSE_INDIVIDUAL > "60.337" ~ "4")))
+```
+
+# Select variables of interest and rename them
+```{r, warning=F}
+SB92017 <- rSB92017 %>% select(ESTU_GENERO, 
+                              ESTU_CONSECUTIVO,  
+                              COLE_COD_DANE_ESTABLECIMIENTO, 
+                              COLE_GENERO, 
+                              COLE_NATURALEZA, 
+                              COLE_JORNADA, 
+                              NIVEL_DESEMP_LENGUAJE, 
+                              NIVEL_DESEMP_MATEMATICAS, 
+                              ESTU_NSE_ESTABLECIMIENTO,
+                              PERIODO,
+                              COLE_AREA_UBICACION,
+                              ESTU_NSE_INDIVIDUAL, 
+                              FAMI_EDUCACIONPADRE,
+                              FAMI_EDUCACIONMADRE,
+                              ESTU_FECHANACIMIENTO) %>% 
+  rename(ID9 = ESTU_CONSECUTIVO, 
+         Gender = ESTU_GENERO, 
+         School_Code = COLE_COD_DANE_ESTABLECIMIENTO, 
+         Mixed_Single_Gender_School = COLE_GENERO, 
+         Sector_School = COLE_NATURALEZA, 
+         Length_School_Day = COLE_JORNADA, 
+         Performance_Language = NIVEL_DESEMP_LENGUAJE, 
+         Performance_Math = NIVEL_DESEMP_MATEMATICAS, 
+         School_SES = ESTU_NSE_ESTABLECIMIENTO,
+         Test_Date = PERIODO,
+         School_Area = COLE_AREA_UBICACION,
+         Student_SES = ESTU_NSE_INDIVIDUAL,
+         Edu_Father = FAMI_EDUCACIONPADRE,
+         Edu_Mother = FAMI_EDUCACIONMADRE,
+         DateofBirth = ESTU_FECHANACIMIENTO) 
+
+
+SB11_20191 <- rSB11_20191 %>% select(ESTU_GENERO, 
+                                    ESTU_CONSECUTIVO,  
+                                    COLE_COD_DANE_ESTABLECIMIENTO, 
+                                    COLE_GENERO, 
+                                    COLE_NATURALEZA, 
+                                    COLE_JORNADA, 
+                                    DESEMP_LECTURA_CRITICA, 
+                                    DESEMP_MATEMATICAS, 
+                                    ESTU_NSE_ESTABLECIMIENTO,
+                                    PERIODO,
+                                    COLE_AREA_UBICACION,
+                                    ESTU_NSE_INDIVIDUAL,
+                                    FAMI_EDUCACIONPADRE,
+                                    FAMI_EDUCACIONMADRE,
+                                    ESTU_FECHANACIMIENTO) %>% 
+  rename(ID11 = ESTU_CONSECUTIVO,
+         Gender = ESTU_GENERO,
+         School_Code = COLE_COD_DANE_ESTABLECIMIENTO, 
+         Mixed_Single_Gender_School = COLE_GENERO, 
+         Sector_School = COLE_NATURALEZA, 
+         Length_School_Day = COLE_JORNADA, 
+         Performance_Language = DESEMP_LECTURA_CRITICA, 
+         Performance_Math = DESEMP_MATEMATICAS, 
+         School_SES = ESTU_NSE_ESTABLECIMIENTO,
+         Test_Date = PERIODO,
+         School_Area = COLE_AREA_UBICACION,
+         Student_SES = ESTU_NSE_INDIVIDUAL,
+         Edu_Father = FAMI_EDUCACIONPADRE,
+         Edu_Mother = FAMI_EDUCACIONMADRE,
+         DateofBirth = ESTU_FECHANACIMIENTO)
+
+SB11_20192 <- rSB11_20192 %>% select(ESTU_GENERO, 
+                                    ESTU_CONSECUTIVO,  
+                                    COLE_COD_DANE_ESTABLECIMIENTO, 
+                                    COLE_GENERO, 
+                                    COLE_NATURALEZA, 
+                                    COLE_JORNADA,  
+                                    DESEMP_LECTURA_CRITICA, 
+                                    DESEMP_MATEMATICAS,  
+                                    ESTU_NSE_ESTABLECIMIENTO,
+                                    PERIODO,
+                                    COLE_AREA_UBICACION,
+                                    ESTU_NSE_INDIVIDUAL, 
+                                    FAMI_EDUCACIONPADRE,
+                                    FAMI_EDUCACIONMADRE,
+                                    ESTU_FECHANACIMIENTO) %>% 
+  rename(Gender = ESTU_GENERO,
+         ID11 = ESTU_CONSECUTIVO, 
+         School_Code = COLE_COD_DANE_ESTABLECIMIENTO, 
+         Mixed_Single_Gender_School = COLE_GENERO, 
+         Sector_School = COLE_NATURALEZA, 
+         Length_School_Day = COLE_JORNADA, 
+         Performance_Language = DESEMP_LECTURA_CRITICA, 
+         Performance_Math = DESEMP_MATEMATICAS, 
+         School_SES = ESTU_NSE_ESTABLECIMIENTO,
+         Test_Date = PERIODO,
+         School_Area = COLE_AREA_UBICACION,
+         Student_SES = ESTU_NSE_INDIVIDUAL,
+         Edu_Father = FAMI_EDUCACIONPADRE,
+         Edu_Mother = FAMI_EDUCACIONMADRE,
+         DateofBirth = ESTU_FECHANACIMIENTO)
+
+key911 <- rename(rkey911, ID9 = S9_estu_consecutivo, ID11 = S11_estu_consecutivo)
+
+ISCE <- rISCE %>% select(COLE_COD_DANE_ESTABLECIMIENTO,
+                        ISCE_9_2017,
+                        desemp9_2017,
+                        progres9_2017,
+                        Eficiencia_9_2017) %>% 
+  rename(School_Code = COLE_COD_DANE_ESTABLECIMIENTO,
+         School_Quality = ISCE_9_2017) 
+```
+
+# Join both datasets for the 11th graders
+```{r, warning=F}
+SB112019 <- rbind(SB11_20191, SB11_20192)
+```
+
+# Merge databases for the two years with the key
+```{r, warning=F}
+d1 <- merge(key911, SB92017, by = "ID9")
+d1 <- merge(d1, ISCE, by = "School_Code")
+
+d2 <- merge(key911, SB112019, by = "ID11")
+d2 <- merge(d2, ISCE, by = "School_Code")
+
+d3 <- select(d2, 
+             "ID11", "Gender", "School_Code", "Mixed_Single_Gender_School", "Sector_School", "Length_School_Day", "Performance_Language", "Performance_Math", "School_SES", "Test_Date", "School_Area", "Student_SES", "Edu_Father", "Edu_Mother", "DateofBirth", "School_Quality", "desemp9_2017", "progres9_2017", "Eficiencia_9_2017")
+
+d4 <- select(d1, 
+             "ID11", "Gender", "School_Code", "Mixed_Single_Gender_School", "Sector_School", "Length_School_Day", "Performance_Language", "Performance_Math", "School_SES", "Test_Date", "School_Area", "Student_SES", "Edu_Father", "Edu_Mother", "DateofBirth", "School_Quality", "desemp9_2017", "progres9_2017", "Eficiencia_9_2017")
+
+d5 <- rbind(d3, d4)
+
+d5$Edu_Father[d5$Edu_Father == "Ninguno"] <- NA
+d5$Edu_Father[d5$Edu_Father == "No aplica"] <- NA
+d5$Edu_Father[d5$Edu_Father == "No Aplica"] <- NA
+d5$Edu_Father[d5$Edu_Father == "No sabe"] <- NA
+d5$Edu_Father[d5$Edu_Father == "NA"] <- NA
+
+d5$Edu_Mother[d5$Edu_Mother == "Ninguno"] <- NA
+d5$Edu_Mother[d5$Edu_Mother == "No aplica"] <- NA
+d5$Edu_Mother[d5$Edu_Mother == "No Aplica"] <- NA
+d5$Edu_Mother[d5$Edu_Mother == "No sabe"] <- NA
+d5$Edu_Mother[d5$Edu_Mother == "NA"] <- NA
+
+d5 <- remove_missing(d5)
+
+d6 <- d5 %>% mutate(ID11 = (str_replace(d5$ID11, "\\SB", "")))
+
+d7 <- d6 %>% mutate(ID11 = as.numeric(ID11))
+
+d8 <- d7[order(d7$ID11),]
+
+d9 <- d8 %>%
+  arrange(ID11, Test_Date) %>%
+  group_by(ID11) %>%
+  mutate(Spell=row_number())
+
+d10 <- d9 %>%
+  arrange(ID11, Test_Date) %>%
+  group_by(ID11) %>%
+  mutate(SpellMax=max(Spell))
+
+d11 <- subset(d10,d10$SpellMax!=1)
+```
+
+# Adjust value names and order them
+```{r, warning=F}
+dfinal <- d11 %>% mutate(Gender = as.factor(case_when(Gender == "Hombre" ~ "0 - Boy", 
+                                                      Gender == "M" ~ "0 - Boy",
+                                                      Gender == "Mujer" ~ "1 - Girl",
+                                                      Gender == "F" ~ "1 - Girl")),
+                         Mixed_Single_Gender_School = case_when(Mixed_Single_Gender_School == "MIXTO" ~ "Mixed gender",
+                                                                Mixed_Single_Gender_School == "MASCULINO" ~ "All male",
+                                                                Mixed_Single_Gender_School == "FEMENINO" ~ "All female"),
+                         Sector_School = as.factor(case_when(Sector_School == "OFICIAL" ~ "1 - Public",
+                                                             Sector_School == "NO OFICIAL" ~ "0 - Private")),
+                         Length_School_Day = case_when(Length_School_Day %in% c("COMPLETA", "UNICA") ~  "Full Day",
+                                                       Length_School_Day == "MAÑANA" ~ "Morning",
+                                                       Length_School_Day == "NOCHE" ~ "Night",
+                                                       Length_School_Day == "TARDE" ~ "Afternoon",
+                                                       Length_School_Day == "SABATINA" ~ "Saturday"),
+                         Full_School_Day = as.factor(case_when(Length_School_Day %in% c("Morning", "Night", "Afternoon", "Saturday") ~ "0 - Non full day",
+                                                               Length_School_Day == "Full Day" ~ "1 - Full day")),
+                         Performance_Language = as.numeric(case_when(Performance_Language %in% c("Insuficiente", 1) ~ 1,
+                                                                     Performance_Language %in% c("Mínimo", 2) ~ 2,
+                                                                     Performance_Language %in% c("Satisfactorio", 3) ~ 3,
+                                                                     Performance_Language %in% c("Avanzado", 4) ~ 4)),
+                         Performance_Math = as.numeric(case_when(Performance_Math %in% c("Insuficiente", 1) ~ 1,
+                                                                 Performance_Math %in% c("Mínimo", 2) ~ 2,
+                                                                 Performance_Math %in% c("Satisfactorio", 3) ~ 3,
+                                                                 Performance_Math %in% c("Avanzado", 4) ~ 4)),
+                         Wave = as.factor(case_when(Test_Date == 2017 ~ 1,
+                                                    Test_Date %in% c(20191, 20194) ~ 2)),
+                         School_SES = as.factor(School_SES),
+                         School_Area = as.factor(case_when(School_Area == "RURAL" ~ "0 - Rural",
+                                                           School_Area == "URBANO" ~ "1 - Urban")),
+                         Edu_Father = as.factor(case_when(Edu_Father == "Primaria incompleta" ~	"Some primary",
+                                                          Edu_Father %in% c("Primaria completa", "Primaria") ~	"Full primary",
+                                                          Edu_Father == "Secundaria (Bachillerato) incompleta" ~	"Some secondary",
+                                                          Edu_Father %in% c("Secundaria (Bachillerato) completa", "Bachillerato") ~	"Full secondary",
+                                                          Edu_Father == "Técnica o tecnológica incompleta" ~	"Some technical",
+                                                          Edu_Father %in% c("Técnica o tecnológica completa", "Técnico o Tecnólogo") ~	"Full technical",
+                                                          Edu_Father == "Educación profesional incompleta" ~	"Some professional",
+                                                          Edu_Father %in% c("Educación profesional completa", "Universitario - Pregrado") ~	"Full professional",
+                                                          Edu_Father %in% c("Postgrado", "Universitario - Posgrado") ~	"Masters or more")),
+                         Edu_Mother = as.factor(case_when(Edu_Mother == "Primaria incompleta" ~	"Some primary",
+                                                          Edu_Mother %in% c("Primaria completa", "Primaria") ~	"Full primary",
+                                                          Edu_Mother == "Secundaria (Bachillerato) incompleta" ~	"Some secondary",
+                                                          Edu_Mother %in% c("Secundaria (Bachillerato) completa", "Bachillerato") ~	"Full secondary",
+                                                          Edu_Mother == "Técnica o tecnológica incompleta" ~	"Some technical",
+                                                          Edu_Mother %in% c("Técnica o tecnológica completa", "Técnico o Tecnólogo") ~	"Full technical",
+                                                          Edu_Mother == "Educación profesional incompleta" ~	"Some professional",
+                                                          Edu_Mother %in% c("Educación profesional completa", "Universitario - Pregrado") ~	"Full professional",
+                                                          Edu_Mother %in% c("Postgrado", "Universitario - Posgrado") ~	"Masters or more")))
+
+
+# Order variable answers
+dfinal$School_SES <- factor(dfinal$School_SES, levels = c(1,2,3,4,5))
+
+dfinal$School_Area <- factor(dfinal$School_Area, levels = c("0 - Rural", "1 - Urban"))
+
+dfinal$Edu_Father <- factor(dfinal$Edu_Father, 
+                            levels = c("Some primary", "Full primary", "Some secondary", "Full secondary", "Some technical", "Full technical", "Some professional", "Full professional", "Masters or more"))
+
+dfinal$Edu_Mother <- factor(dfinal$Edu_Mother, 
+                            levels = c("Some primary", "Full primary", "Some secondary", "Full secondary", "Some technical", "Full technical", "Some professional", "Full professional", "Masters or more"))
+
+dfinal <- dfinal %>% mutate(S_Quality = as.factor(case_when(School_Quality <= "4.7" ~ "Low",
+                                                            School_Quality > "4.7" & School_Quality < "6.8" ~ "Medium", 
+                                                            School_Quality >= "6.8" ~ "High")))
+
+dfinal$S_Quality <- factor(dfinal$S_Quality, levels = c("Low", "Medium", "High"))
+
+dfinal$Performance_MatLang <- (dfinal$Performance_Language + dfinal$Performance_Math)
+
+dfinal$AVPerformance_MatLang <- (dfinal$Performance_Language + dfinal$Performance_Math)/2
+```
+
+# Save final dataframe
+```{r, warning=F}
+save(dfinal, file = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/Final Data.Rda")
+```

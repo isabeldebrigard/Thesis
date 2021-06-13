@@ -1,0 +1,357 @@
+---
+title: "Analysis"
+output:
+  word_document: default
+  html_document: default
+---
+# Libraries
+```{r setup, include=T, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(stargazer)
+library(ggplot2)
+library(descr)
+library(sjPlot)
+library(readxl)
+library(stringr)
+library(plm)
+library(table1)
+library(RColorBrewer)
+library(lattice)
+library(foreign)
+library(MASS)
+library(Hmisc)
+library(reshape2)
+options(scipen=999)
+```
+
+# Data set
+```{r, include=T, warning=F}
+load("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/Final Data.Rda")
+```
+
+# OLS Regressions
+
+## Naïve model
+```{r, warning=F}
+Naive_OLS_Mat <- lm(data = dfinal, Performance_Math ~ Full_School_Day)
+Naive_OLS_Lan <- lm(data = dfinal, Performance_Language ~ Full_School_Day)
+Naive_OLS_Pool <- lm(data = dfinal, Performance_MatLang ~ Full_School_Day)
+
+stargazer(Naive_OLS_Mat, Naive_OLS_Lan, Naive_OLS_Pool,
+          title = "Table 3. OLS - Effects of full schoool days on test scores (naïve estimators)",
+          column.labels = c("Mathematics", "Language", "Pooled performance"),
+          dep.var.labels = c("Test scores", "Test scores", "Test scores"),
+          covariate.labels = "Full-day schooling",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis). Reference category is Non full-day schooling.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Naive_OLS.html")
+```
+
+## Model with all controls
+```{r, warning=F}
+Control_OLS_Mat <- lm(data = dfinal, Performance_Math ~ Full_School_Day + Sector_School + School_Area + School_SES + S_Quality + Gender + Student_SES + Edu_Mother + Edu_Father)
+Control_OLS_Lan <- lm(data = dfinal, Performance_Language ~ Full_School_Day + Sector_School + School_Area + School_SES + S_Quality + Gender + Student_SES + Edu_Mother + Edu_Father)
+Control_OLS_Pool <- lm(data = dfinal, Performance_MatLang ~ Full_School_Day + Sector_School + School_Area + School_SES + S_Quality + Gender + Student_SES + Edu_Mother + Edu_Father)
+
+stargazer(Control_OLS_Mat, Control_OLS_Lan, Control_OLS_Pool,
+          title = "Table 4. OLS - Effects of full schoool days on test scores with controls",
+          column.labels = c("Mathematics", "Language", "Pooled performance"),
+          dep.var.labels = c("Test scores", "Test scores", "Test scores"),
+          covariate.labels = c("Full-day school", "Public school", "Urban school", "School - SES 2", "School - SES 3", "School - SES 4", "Medium quality school", "High quality school", "Girl", "Student - SES 2", "Student - SES 3", "Student - SES 4", "Mother - full primary education", "Mother - some secondary education", "Mother - full secondary education", "Mother - some technical education", "Mother - full technical education", "Mother - some professional education", "Mother - full professional education", "Mother - masters or more", "Father - full primary education", "Father - some secondary education", "Father - full secondary education", "Father - some technical education", "Father - full technical education", "Father - some professional education", "Father - full professional education", "Father - masters or more"),
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis). Reference categories are Non-full day school, Private school, Rural School, School - SES 1, Low quality school, Boy, Student - SES 1, Mother - some primary education, Father - some primary education.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Control_OLS.html")
+```
+
+## Model with quality-length interaction
+```{r, warning=F}
+Interaction_OLS_Mat <- lm(data = dfinal, Performance_Math ~ Full_School_Day:S_Quality + Sector_School + School_Area + School_SES  + Gender + Student_SES + Edu_Mother + Edu_Father)
+Interaction_OLS_Lan <- lm(data = dfinal, Performance_Language ~ Full_School_Day:S_Quality + Sector_School + School_Area + School_SES  + Gender + Student_SES + Edu_Mother + Edu_Father)
+Interaction_OLS_Pool <- lm(data = dfinal, Performance_MatLang ~ Full_School_Day:S_Quality + Sector_School + School_Area + School_SES  + Gender + Student_SES + Edu_Mother + Edu_Father)
+
+stargazer(Interaction_OLS_Mat, Interaction_OLS_Lan, Interaction_OLS_Pool,
+          title = "Table 5. OLS - Effects of full school days on test scores with controls and interaction of school day length and quality",
+          
+          column.labels = c("Mathematics", "Language", "Pooled performance"),
+          dep.var.labels = c("Test scores", "Test scores", "Test scores"),
+          covariate.labels = c("Public school", "Urban school", "School - SES 2", "School - SES 3", "School - SES 4", "Girl", "Student - SES 2", "Student - SES 3", "Student - SES 4", "Mother - full primary education", "Mother - some secondary education", "Mother - full secondary education", "Mother - some technical education", "Mother - full technical education", "Mother - some professional education", "Mother - full professional education", "Mother - masters or more", "Father - full primary education", "Father - some secondary education", "Father - full secondary education", "Father - some technical education", "Father - full technical education", "Father - some professional education", "Father - full professional education", "Father - masters or more", "Non-full day school - Low quality school", "Full day school - Low quality school", "Non-full day school - Medium quality school", "Full day school - Medium quality school", "Non-full day school - High quality school", "Full day school - High quality school"),
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Only the coefficients for the interaction are shown. Beta coefficients and standard errors (in parenthesis). Reference categories are Private school, Rural School, School - SES 1, Boy, Student - SES 1, Mother - some primary education, Father - some primary education.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Interaction_OLS.html")
+```
+
+## Ordered probit models
+
+## Ordered Probit - Naïve estimators
+```{r}
+Naive_OLS_Mat_PROBIT <- polr(data = dfinal, (as.factor(Performance_Math)) ~ Full_School_Day, Hess=TRUE)
+Naive_OLS_Lan_PROBIT <- polr(data = dfinal, (as.factor(Performance_Language)) ~ Full_School_Day, Hess=TRUE)
+
+stargazer(Naive_OLS_Mat_PROBIT, Naive_OLS_Lan_PROBIT,
+          title = "Appendix 2a. Ordered probit - Effects of full school days on test scores (naïve estimators)",
+          column.labels = c("Mathematics", "Language"),
+          dep.var.labels = c("Test scores", "Test scores"),
+          covariate.labels = "Full-day schooling",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis). Reference category is Non full-day schooling.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Naive_OLS_PROBIT.html")
+```
+
+## Ordered Probit with controls
+```{r}
+Control_OLS_Mat_PROBIT <- polr(data = dfinal, 
+                               (as.factor(Performance_Math)) ~ Full_School_Day + Sector_School + School_Area + School_SES + S_Quality +
+                                 Gender + Student_SES + Edu_Mother + Edu_Father, Hess=TRUE)
+
+Control_OLS_Lan_PROBIT <- polr(data = dfinal, 
+                               (as.factor(Performance_Language)) ~ Full_School_Day + Sector_School + School_Area + School_SES + S_Quality +
+                                 Gender + Student_SES + Edu_Mother + Edu_Father, Hess=TRUE)
+
+Control_OLS_Pool_PROBIT <- polr(data = dfinal, 
+                                (as.factor(Performance_MatLang)) ~ Full_School_Day + Sector_School + School_Area + School_SES + S_Quality +
+                                  Gender + Student_SES + Edu_Mother + Edu_Father, Hess=TRUE) 
+
+stargazer(Control_OLS_Mat_PROBIT, Control_OLS_Lan_PROBIT, Control_OLS_Pool_PROBIT,
+          title = "Appendix 2b. Ordered Probit - Effects of full school days on test scores with controls",
+          column.labels = c("Mathematics", "Language", "Pooled performance"),
+          dep.var.labels = c("Test scores", "Test scores", "Test scores"),
+          covariate.labels = c("Full-day school", "Public school", "Urban school", "School - SES 2", "School - SES 3", "School - SES 4", "Medium quality school", "High quality school", "Girl", "Student - SES 2", "Student - SES 3", "Student - SES 4", "Mother - full primary education", "Mother - some secondary education", "Mother - full secondary education", "Mother - some technical education", "Mother - full technical education", "Mother - some professional education", "Mother - full professional education", "Mother - masters or more", "Father - full primary education", "Father - some secondary education", "Father - full secondary education", "Father - some technical education", "Father - full technical education", "Father - some professional education", "Father - full professional education", "Father - masters or more"),
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis). Reference categories are Non-full day school, Private school, Rural School, School - SES 1, Low quality school, Boy, Student - SES 1, Mother - some primary education, Father - some primary education.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Control_OLS_PROBIT.html")
+```
+
+
+# Fixed Effects models
+
+## FE without controls
+```{r, warning=F}
+FixedEM <- plm(Performance_Math ~ Full_School_Day, data = dfinal, index=c("ID11"), model = "within")
+FixedEL <- plm(Performance_Language ~ Full_School_Day, data = dfinal, index=c("ID11"), model = "within")
+Pooled_Fixed <- plm(Performance_MatLang ~ Full_School_Day, data = dfinal, index=c("ID11"), model = "within")
+
+stargazer(FixedEM, FixedEL, Pooled_Fixed,
+          title = "Table 7. FE - Effects of a full day of schooling on test scores (without controls)",
+          column.labels = c("Mathematics", "Language", "Pooled"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores"),
+          covariate.labels = "Full-day schooling",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference category is Non full-day schooling.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/FE.html")
+```
+
+## FE controlling for wave
+```{r, warning=F}
+Wave_FixedEM <- plm(Performance_Math ~ Full_School_Day + Wave, data = dfinal, index=c("ID11", "Wave"), model = "within")
+Wave_FixedEL <- plm(Performance_Language ~ Full_School_Day + Wave, data = dfinal, index=c("ID11", "Wave"), model = "within")
+Wave_Pooled_Fixed <- plm(Performance_MatLang ~ Full_School_Day + Wave, data = dfinal, index=c("ID11", "Wave"), model = "within")
+
+stargazer(Wave_FixedEM, Wave_FixedEL, Wave_Pooled_Fixed,
+          title = "Table 8. FE - Effects of a full day of schooling on test scores (controlling for wave)",
+          column.labels = c("Mathematics", "Language", "Pooled"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores"),
+          covariate.labels = c("Full-day school", "Second Wave"),
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference categories are Non full-day school and First wave.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Wave_FE.html")
+```
+
+# FE First difference 
+```{r, warning=F}
+FDFixedEM <- plm(Performance_Math ~ Full_School_Day, data = dfinal, index=c("ID11"), model = "fd")
+FDFixedEL <- plm(Performance_Language ~ Full_School_Day, data = dfinal, index=c("ID11"), model = "fd")
+FDPooled_Fixed <- plm(Performance_MatLang ~ Full_School_Day, data = dfinal, index=c("ID11"), model = "fd")
+
+stargazer(FDFixedEM, FDFixedEL, FDPooled_Fixed,
+          title = "Appendix 3. FE - Effects of a full day of schooling on test scores (first difference)",
+          column.labels = c("Mathematics", "Language", "Pooled"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores"),
+          covariate.labels = "Full-day school",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference category is Non full-day school.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/FEFirstDifference.html")
+```
+
+
+# Fixed effects for sub-groups - effect heterogeneity
+
+## School area
+```{r, warning=F}
+data_urban <- subset(dfinal, dfinal$School_Area == "1 - Urban")
+data_rural <- subset(dfinal, dfinal$School_Area == "0 - Rural")
+
+uFixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_urban, index=c("ID11"), model = "within")
+uFixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_urban, index=c("ID11"), model = "within")
+
+rFixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_rural, index=c("ID11"), model = "within")
+rFixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_rural, index=c("ID11"), model = "within")
+
+stargazer(uFixedEM, uFixedEL, rFixedEM, rFixedEL,
+          title = "Appendix 4a. FE - Effects of a full day of schooling on test scores by school area",
+          column.labels = c("Urban Schools - Mathematics", "Urban Schools - Language", "Rural Schools - Mathematics", "Rural Schools - Language"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores", "Test scores"),
+          covariate.labels = "Full-day school",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference category is Non full-day school.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/UrbanRuralFE.html")
+```
+
+## School sector
+```{r, warning=F}
+data_public <- subset(dfinal, dfinal$Sector_School == "1 - Public")
+data_private <- subset(dfinal, dfinal$Sector_School == "0 - Private")
+
+pubFixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_public, index=c("ID11"), model = "within")
+pubFixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_public, index=c("ID11"), model = "within")
+
+priFixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_private, index=c("ID11"), model = "within")
+priFixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_private, index=c("ID11"), model = "within")
+
+stargazer(pubFixedEM, pubFixedEL, priFixedEM, priFixedEL,
+          title = "Appendix 4b. FE - Effects of a full day of schooling on test scores by school sector",
+          column.labels = c("Public Schools - Mathematics", "Public Schools - Language", "Private Schools - Mathematics", "Private Schools - Language"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores", "Test scores"),
+          covariate.labels = "Full-day school",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference category is Non full-day school.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/PublicPrivateFE.html")
+```
+
+## School SES levels
+```{r, warning=F}
+data_SES1 <- subset(dfinal, dfinal$School_SES == 1)
+data_SES2 <- subset(dfinal, dfinal$School_SES == 2)
+data_SES3 <- subset(dfinal, dfinal$School_SES == 3)
+data_SES4 <- subset(dfinal, dfinal$School_SES == 4)
+# data_SES5 <- subset(dfinal, dfinal$School_SES == 5)
+
+SES1FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_SES1, index=c("ID11"), model = "within")
+SES1FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_SES1, index=c("ID11"), model = "within")
+
+SES2FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_SES2, index=c("ID11"), model = "within")
+SES2FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_SES2, index=c("ID11"), model = "within")
+
+SES3FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_SES3, index=c("ID11"), model = "within")
+SES3FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_SES3, index=c("ID11"), model = "within")
+
+SES4FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_SES4, index=c("ID11"), model = "within")
+SES4FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_SES4, index=c("ID11"), model = "within")
+
+# There is not enough variation within schools with an SES of 5 to render any results for these models.
+# SES5FixedEM <- plm(Performance_Math ~ Full_School_Day + Wave, data = data_SES5, index=c("ID11", "Wave"), model = "within")
+# SES5FixedEL <- plm(Performance_Language ~ Full_School_Day + Wave, data = data_SES5, index=c("ID11", "Wave"), model = "within")
+
+
+stargazer(SES1FixedEM, SES1FixedEL, SES2FixedEM, SES2FixedEL, SES3FixedEM, SES3FixedEL, SES4FixedEM, SES4FixedEL,
+          title = "Appendix 4c. FE - Effects of a full day of schooling on test scores by school SES",
+          column.labels = c("SES 1 - Mathematics", "SES 1 - Language", "SES 2 - Mathematics", "SES 2 - Language", "SES 3 - Mathematics", "SES 3 - Language", "SES 4 - Mathematics", "SES 4 - Language"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores", "Test scores", "Test scores", "Test scores", "Test scores", "Test scores"),
+          covariate.labels = "Full-day school",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference category is Non full-day school.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/SchoolSESFE.html")
+```
+
+## Individual SES levels
+```{r, warning=F}
+data_indivSES1 <- subset(dfinal, dfinal$Student_SES == 1)
+data_indivSES2 <- subset(dfinal, dfinal$Student_SES == 2)
+data_indivSES3 <- subset(dfinal, dfinal$Student_SES == 3)
+data_indivSES4 <- subset(dfinal, dfinal$Student_SES == 4)
+
+indivSES1FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_indivSES1, index=c("ID11", "Wave"), model = "within")
+indivSES1FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_indivSES1, index=c("ID11", "Wave"), model = "within")
+
+indivSES2FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_indivSES2, index=c("ID11", "Wave"), model = "within")
+indivSES2FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_indivSES2, index=c("ID11", "Wave"), model = "within")
+
+indivSES3FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_indivSES3, index=c("ID11", "Wave"), model = "within")
+indivSES3FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_indivSES3, index=c("ID11", "Wave"), model = "within")
+
+indivSES4FixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_indivSES4, index=c("ID11", "Wave"), model = "within")
+indivSES4FixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_indivSES4, index=c("ID11", "Wave"), model = "within")
+
+
+
+stargazer(indivSES1FixedEM, indivSES1FixedEL, indivSES2FixedEM, indivSES2FixedEL, indivSES3FixedEM, indivSES3FixedEL, indivSES4FixedEM, indivSES4FixedEL,
+          title = "Appendix 4d. FE - Effects of a full day of schooling on test scores by individual SES",
+          column.labels = c("SES 1 - Mathematics", "SES 1 - Language", "SES 2 - Mathematics", "SES 2 - Language", "SES 3 - Mathematics", "SES 3 - Language", "SES 4 - Mathematics", "SES 4 - Language"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores", "Test scores", "Test scores", "Test scores", "Test scores", "Test scores"),
+          covariate.labels = "Full-day school",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference category is Non full-day school.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/IndividualSEFE.html")
+```
+
+## School Quality
+```{r, warning=F}
+data_high <- subset(dfinal, dfinal$S_Quality == "High")
+data_medium <- subset(dfinal, dfinal$S_Quality == "Medium")
+data_low <- subset(dfinal, dfinal$S_Quality == "Low")
+
+hFixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_high, index=c("ID11"), model = "within")
+hFixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_high, index=c("ID11"), model = "within")
+
+mFixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_medium, index=c("ID11"), model = "within")
+mFixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_medium, index=c("ID11"), model = "within")
+
+lFixedEM <- plm(Performance_Math ~ Full_School_Day, data = data_low, index=c("ID11"), model = "within")
+lFixedEL <- plm(Performance_Language ~ Full_School_Day, data = data_low, index=c("ID11"), model = "within")
+
+stargazer(hFixedEM, hFixedEL, mFixedEM, mFixedEL, lFixedEM, lFixedEL,
+          title = "Appendix 4e. FE - Effects of a full day of schooling on test scores by school quality",
+          column.labels = c("High Quality Schools - Mathematics", "High Quality Schools - Language", "Medium Quality Schools - Mathematics", "Medium Quality Schools - Language", "Low Quality Schools - Mathematics", "Low Quality Schools - Language"), 
+          model.numbers = FALSE,
+          dep.var.labels = c("Test scores", "Test scores", "Test scores", "Test scores", "Test scores", "Test scores"),
+         covariate.labels = "Full-day school",
+          type = "text",
+          t.auto = F,
+          p.auto = F,
+          notes = "Beta coefficients and standard errors (in parenthesis).  Reference category is Non full-day school.",
+          notes.align = "l",
+          out = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/SchoolQualityFE.html")
+```

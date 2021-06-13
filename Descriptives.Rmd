@@ -1,0 +1,327 @@
+---
+title: "Descriptives"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=T, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(stargazer)
+library(ggplot2)
+library(descr)
+library(sjPlot)
+library(readxl)
+library(stringr)
+library(plm)
+library(table1)
+library(RColorBrewer)
+library(lattice)
+options(scipen=999)
+```
+
+# Load data
+```{r, include=T, warning=F}
+load("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/Final Data.Rda")
+```
+
+# Color palette
+```{r, include=T, warning=F}
+display.brewer.pal(n = 9, name = 'GnBu')
+brewer.pal(n = 9, name = "GnBu")
+```
+
+# Sample size
+```{r, warning=F}
+# Persons and person/years
+length(unique(dfinal$ID11)) # 32.581
+length(dfinal$ID11) # 65.162
+```
+
+# Sample Statistics Dependent Variable
+```{r, warning=F}
+# Language
+Table1a <- table(dfinal$Full_School_Day, dfinal$Performance_Language)
+Table2a <- prop.table(Table1a, 1)
+Table3a <- as.data.frame(Table2a)
+Table3a$Percent <- Table3a$Freq*100
+
+Fig1 <- ggplot(Table3a, 
+       aes(fill=Var1, x=Var2, y=Percent)) +
+  geom_bar(stat="identity", position=position_dodge(width=1)) + 
+  ylab("%") + 
+  xlab("Performance") +
+  ggtitle("Figure 1. Performance in language by length of school day") + 
+  labs(caption = "Own calculations with data from ICFES") + 
+  scale_fill_manual(name = "Full school day", 
+                    labels = c("Full day", "Not full day"), 
+                    values = c("#A8DDB5", "#7BCCC4"))
+
+ggsave(Fig1, file = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Figure1.png")
+
+
+
+# Mathematics
+Table1b <- table(dfinal$Full_School_Day, dfinal$Performance_Math)
+Table2b <- prop.table(Table1b, 1)
+Table3b <- as.data.frame(Table2b)
+Table3b$Percent <- Table3b$Freq*100
+
+Fig2 <- ggplot(Table3b, 
+       aes(fill=Var1, x=Var2, y=Percent)) +
+  geom_bar(stat="identity", position=position_dodge(width=1)) + 
+  ylab("%") + 
+  xlab("Performance") +
+  ggtitle("Figure 2. Performance in mathematics by length of school day") + 
+  labs(caption = "Own calculations with data from ICFES") + 
+  scale_fill_manual(name = "Full school day", 
+                    labels = c("Full day", "Not full day"), 
+                    values = c("#A8DDB5", "#7BCCC4"))
+                    
+ggsave(Fig2, file = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Figure2.png")
+```
+
+# Distribution performance by subject and pooled
+```{r, warning=F}
+table1::label(dfinal$Performance_Language) <- "Performance Language"
+table1::label(dfinal$Performance_Math) <- "Performance Mathematics"
+table1::label(dfinal$Performance_MatLang) <- "Pooled Performance"
+Table3 <- table1::table1(~ Performance_Language + Performance_Math + Performance_MatLang, data = dfinal, 
+               caption = "Table 3. Sample statistics for performance by subject",
+               footnote = "Own calculations with data from ICFES")
+
+# Pooled
+Table1c <- table(dfinal$Full_School_Day, dfinal$Performance_MatLang)
+Table2c <- prop.table(Table1c, 1)
+Table3c <- as.data.frame(Table2c)
+Table3c$Percent <- Table3c$Freq*100
+
+Fig3 <- ggplot(Table3c, 
+       aes(fill=Var1, x=Var2, y=Percent)) +
+  geom_bar(stat="identity", position=position_dodge(width=1)) + 
+  ylab("%") + 
+  xlab("Performance") +
+  ggtitle("Fig. 3 Pooled performance by length of school day") + 
+  labs(caption = "Own calculations with data from ICFES") + 
+  scale_fill_manual(name = "Full school day", 
+                    labels = c("Full day", "Not full day"), 
+                    values = c("#A8DDB5", "#7BCCC4"))
+                    
+ggsave(Fig3, file = "/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Figures/Figure3.png")
+```
+
+# Sample Statistics Independent Variables
+```{r, warning=F}
+table1::label(dfinal$Full_School_Day) <- "Full School day"
+table1::label(dfinal$Gender) <- "Gender"
+table1::label(dfinal$Sector_School) <- "School sector"
+table1::label(dfinal$School_SES) <- "School SES"
+table1::label(dfinal$School_Area) <- "School area"
+table1::label(dfinal$Student_SES) <- "Student SES"
+table1::label(dfinal$Edu_Mother) <- "Education of the Mother"
+table1::label(dfinal$Edu_Father) <- "Education of the Father"
+table1::label(dfinal$S_Quality) <- "School Quality"
+Table1 <- table1::table1(~ Full_School_Day  + Sector_School + School_Area + School_SES + S_Quality + Gender + Student_SES + Edu_Mother + Edu_Father , data = dfinal, 
+               caption = "Table 1. Sample statistics for main independent variables",
+               footnote = "Own calculations with data from ICFES")
+
+Table1
+```
+
+# Distribution of different school lengths
+```{r, warning=F}
+table1::label(dfinal$Length_School_Day) <- "Length of school day"
+Table2 <- table1::table1(~ Length_School_Day, data = dfinal,
+                         caption = "Table 2. Proportion of students by length of school day",
+               footnote = "Own calculations with data from ICFES")
+
+Table2
+```
+
+# Distribution: Length of the school day
+```{r}
+# Count 
+lenght_school_day <- table(dfinal$Length_School_Day) 
+
+# Percentages
+round(((prop.table(table(dfinal$Length_School_Day))) * 100), 2)
+
+
+barplot(lenght_school_day, main = "Length of the school day",
+        col=c("#7BCCC4"))
+```
+
+# Distribution Gender
+```{r, warning=F}
+# Count
+gender <- table(dfinal$Gender)
+school_day_gender <- table(dfinal$Gender, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$Gender))) * 100), 2)
+
+round(((prop.table(table(dfinal$Gender, dfinal$Length_School_Day), 2)) * 100),2) # column percentages
+
+barplot(school_day_gender, main = "Length of the school day by gender", 
+        beside = T, 
+        legend = row.names(school_day_gender),
+                           col=c("#A8DDB5", "#7BCCC4"))
+```
+
+# Distribution School Sector
+```{r, warning=F}
+# Count
+type <- table(dfinal$Sector_School)
+Sector_School <- table(dfinal$Sector_School, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$Sector_School))) * 100), 2)
+
+round(((prop.table(table(dfinal$Sector_School, dfinal$Length_School_Day), 2)) * 100), 2) # column percentages
+
+barplot(Sector_School, main = "Length of the school day by type of school", 
+        beside = T, 
+        legend = row.names(Sector_School),
+                           col=c("#A8DDB5", "#7BCCC4"))
+```
+
+# Distribution School SES
+```{r, warning=F}
+# Count
+schoolSES <- table(dfinal$School_SES)
+schoolSES_school <- table(dfinal$School_SES, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$School_SES))) * 100), 2)
+
+round(((prop.table(table(dfinal$School_SES, dfinal$Length_School_Day), 2)) * 100), 2) # column percentages
+
+barplot(schoolSES_school, main = "Length of the school day by School SES", 
+        beside = T, 
+        legend = row.names(schoolSES),
+                           col=c("#CCEBC5", "#A8DDB5", "#7BCCC4", "#4EB3D3", "#2B8CBE"))
+```
+
+# Distribution School area
+```{r, warning=F}
+# Count
+area <- table(dfinal$School_Area)
+area_school <- table(dfinal$School_Area, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$School_Area))) * 100), 2)
+
+round(((prop.table(table(dfinal$School_Area, dfinal$Length_School_Day), 2)) * 100), 2) # column percentages
+
+
+barplot(area_school, main = "Length of the school day by area of school", 
+        beside = T, 
+        legend = row.names(area_school),
+                           col=c("#A8DDB5", "#7BCCC4"))
+```
+
+# Distribution Student SES
+```{r, warning=F}
+# Count
+studentSES <- table(dfinal$Student_SES)
+studentSES_school <- table(dfinal$Student_SES, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$Student_SES))) * 100), 2)
+
+round(((prop.table(table(dfinal$Student_SES, dfinal$Length_School_Day), 2)) * 100), 2) # column percentages
+
+barplot(studentSES, main = "Student SES",
+        col=c("#A8DDB5"))
+barplot(studentSES_school, main = "Length of the school day by Student SES", 
+        beside = T, 
+        legend = row.names(studentSES),
+                           col=c("#CCEBC5", "#A8DDB5", "#7BCCC4", "#4EB3D3", "#2B8CBE"))
+```
+
+# Distribution Education of the Father
+```{r, warning=F}
+# Count
+eduF <- table(dfinal$Edu_Father)
+eduF_school <- table(dfinal$Edu_Father, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$Edu_Father))) * 100), 2)
+
+round(((prop.table(table(dfinal$Edu_Father, dfinal$Length_School_Day), 2)) * 100), 2) # column percentages
+
+barplot(eduF, main = "Father's Education level",
+        col=c("#A8DDB5"))
+barplot(eduF_school, main = "Length of the school day by Father's education", 
+        beside = T, 
+        legend = row.names(eduF),
+                           col=c("#F7FCF0", "#E0F3DB", "#CCEBC5", "#A8DDB5", "#7BCCC4", "#4EB3D3", "#2B8CBE", "#0868AC", "#084081"))
+```
+
+# Distribution Education of the Mother
+```{r, warning=F}
+# Count
+eduM <- table(dfinal$Edu_Mother)
+eduM_school <- table(dfinal$Edu_Mother, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$Edu_Mother))) * 100), 2)
+
+round(((prop.table(table(dfinal$Edu_Mother, dfinal$Length_School_Day), 2)) * 100), 2) # column percentages
+
+barplot(eduM, main = "Mother's Education level",
+        col=c("#A8DDB5"))
+barplot(eduM_school, main = "Length of the school day by Mother's education", 
+        beside = T, 
+        legend = row.names(eduM),
+                           col=c("#F7FCF0", "#E0F3DB", "#CCEBC5", "#A8DDB5", "#7BCCC4", "#4EB3D3", "#2B8CBE", "#0868AC", "#084081"))
+```
+
+# Distribution School Quality
+```{r, warning=F}
+# Count
+quality <- table(dfinal$S_Quality)
+quality_school <- table(dfinal$S_Quality, dfinal$Length_School_Day)
+
+# Percentages
+round(((prop.table(table(dfinal$S_Quality))) * 100), 2)
+
+round(((prop.table(table(dfinal$S_Quality, dfinal$Length_School_Day), 2)) * 100), 2) # column percentages
+round(((prop.table(table(dfinal$S_Quality, dfinal$Length_School_Day), 1)) * 100),2) # row percentages
+
+barplot(quality, main = "School Quality",
+        col=c("#A8DDB5"))
+barplot(quality_school, main = "Length of the school day by school quality", 
+        beside = T, 
+        legend = row.names(quality),
+                           col=c("#F7FCF0", "#A8DDB5", "#0868AC"))
+```
+
+# Standard deviations and effect sizes
+```{r, warning=F}
+math = dfinal$Performance_Math
+language = dfinal$Performance_Language
+pooled = dfinal$Performance_MatLang
+
+sd(math)
+sd(language)
+sd(pooled)
+
+# OLS + controls
+math_OLS_controls <- round(0.132/sd(math), digits = 2)  # medium
+lang_OLS_controls <- round(0.062/sd(language), digits = 2) # medium
+
+
+# OLS + interactions
+math_OLS_interactions_low <- round(0.631/sd(math), digits = 2) # large
+lang_OLS_int_eractions_low <- round(0.442/sd(language), digits = 2) # large
+math_OLS_interactions_high <- round(0.214/sd(math), digits = 2) # large
+lang_OLS_interactions_high <- round(0.099/sd(language), digits = 2) # medium
+
+# FE
+math_FE <- round(0.355/sd(math), digits = 2) # large
+lang_FE <- round(0.059/sd(language), digits = 2) # medium
+
+# (Kraft, 2020) "less than 0.05 is Small, 0.05 to less than 0.20 is Medium, and 0.20 or greater is Large"
+```

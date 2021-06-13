@@ -1,0 +1,66 @@
+---
+title: "Schools that changed"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=T, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(stargazer)
+library(ggplot2)
+library(descr)
+library(sjPlot)
+library(readxl)
+library(stringr)
+library(plm)
+library(table1)
+library(RColorBrewer)
+library(lattice)
+options(scipen=999)
+library(tidyr)
+library(reshape2)
+```
+
+```{r, include=T, warning=F}
+load("/Users/isabeldebrigard/Google Drive/Hertie/GitHub_isabeldebrigard/Thesis/Thesis data/Data/Final Data.Rda")
+```
+
+# Getting the observations of children who changed from partial to full day schooling
+```{r, warning=F}
+data_wide <- dcast(dfinal, ID11 ~ Spell, value.var="Full_School_Day")
+
+data_wide <- remove_missing(data_wide)
+
+names(data_wide)[names(data_wide)=="1"] <- "First"
+names(data_wide)[names(data_wide)=="2"] <- "Second"
+
+data_wide <-  data_wide %>% mutate(Change = if_else(data_wide$"First" == data_wide$"Second", "Same", "Different"))
+
+table(data_wide$Change)
+
+round(((prop.table(table(data_wide$Change))) * 100), 2)
+```
+
+# Who are the "changers"?
+```{r, warning=F}
+changers <- data_wide %>% filter(Change == "Different")
+
+changers <- merge(changers, dfinal, by = "ID11")
+
+table1::label(changers$Gender) <- "Gender"
+table1::label(changers$Sector_School) <- "School sector"
+table1::label(changers$School_SES) <- "School SES"
+table1::label(changers$School_Area) <- "School area"
+table1::label(changers$Student_SES) <- "Student SES"
+table1::label(changers$Edu_Mother) <- "Education of the Mother"
+table1::label(changers$Edu_Father) <- "Education of the Father"
+table1::label(changers$S_Quality) <- "School Quality"
+TableCh <- table1::table1(~ Sector_School + School_Area + School_SES + S_Quality + Gender + Student_SES + Edu_Mother + Edu_Father, data = changers, 
+               caption = "Table 6. Sample statistics for observations of children who changed from partial to full day schooling",
+               footnote = "Own calculations with data from ICFES")
+
+TableCh
+```
+
